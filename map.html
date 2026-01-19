@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>My Places Map</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        .popup {
+            font-family: Arial;
+            font-size: 14px;
+        }
+        .popup b {
+            font-size: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <script>
+        // ===============================
+        // 1. INJECT DATA FROM STREAMLIT
+        // ===============================
+        const places = JSON.parse(window.parent.places_json);
+
+        // ===============================
+        // 2. INIT GOOGLE MAP
+        // ===============================
+        function initMap() {
+            const center = { lat: 44.439663, lng: 26.096306 };
+
+            const map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 12,
+                center: center,
+                mapTypeControl: false,
+            });
+
+            // ===============================
+            // 3. Add markers + popups
+            // ===============================
+            places.forEach((p) => {
+                const marker = new google.maps.Marker({
+                    position: { lat: p.lat, lng: p.lng },
+                    map,
+                    title: p.name
+                });
+
+                const popupHTML = `
+                    <div class="popup">
+                        <b>${p.name}</b><br>
+                        <small>${p.city}</small><br><br>
+
+                        <b>Latitude:</b> ${p.lat}<br>
+                        <b>Longitude:</b> ${p.lng}<br><br>
+
+                        <b>Rating:</b> ⭐ ${p.rating}<br>
+                        <b>Notes:</b> ${p.notes || "—"}<br>
+                    </div>
+                `;
+
+                const infowindow = new google.maps.InfoWindow({
+                    content: popupHTML,
+                });
+
+                marker.addListener("click", () => {
+                    infowindow.open({
+                        anchor: marker,
+                        map,
+                    });
+
+                    // Send selected place to Streamlit
+                    window.parent.postMessage(
+                        { type: "select_place", lat: p.lat, lng: p.lng },
+                        "*"
+                    );
+                });
+            });
+        }
+    </script>
+
+    <!-- Load Google Maps JS -->
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap">
+    </script>
+
+</body>
+</html>
